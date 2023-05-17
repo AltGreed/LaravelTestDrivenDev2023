@@ -9,8 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class PageController extends Controller
 {
-    use RefreshDatabase;
-    
+
     public function home(){
         return view('welcome' , [
             'repositories' => Repository::latest()->get()
