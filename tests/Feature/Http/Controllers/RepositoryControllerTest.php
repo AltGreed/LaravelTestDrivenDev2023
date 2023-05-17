@@ -15,8 +15,8 @@ class RepositoryControllerTest extends TestCase
      * A basic feature test example.
      */
 
-     use WithFaker;
-     use RefreshDatabase;
+     use WithFaker, RefreshDatabase;
+    
 
     public function test_guest(): void
         {
@@ -29,7 +29,8 @@ class RepositoryControllerTest extends TestCase
         $this->delete('repositories/1')->assertRedirect('login');
         
         }
-
+    
+        
         public function test_store(){
             $data = [
                 'url' => $this->faker->url,
@@ -68,6 +69,22 @@ class RepositoryControllerTest extends TestCase
                 ->assertRedirect("repositories/$repository->id/edit");
 
                 $this->assertDatabaseHas('repositories', $data);
+        }
+
+        public function test_update_policy(){
+            $user = User::factory()->create(); //id=1
+            $repository = Repository::factory()->create(); //id=2
+            $data = [
+                'url' => $this->faker->url,
+                'description' => $this->faker->text,
+            ];
+
+            $this
+                ->actingAs($user)
+                ->put("repositories/$repository->id", $data)
+                ->assertStatus(403);
+
+                //$this->assertDatabaseHas('repositories', $data);
         }
 
         public function test_destroy(){
@@ -118,21 +135,77 @@ class RepositoryControllerTest extends TestCase
                 ->assertSessionHasErrors(['url', 'description']);
         }
 
-        public function test_update_policy(){
-            $user = User::factory()->create(); //id=1
-            $repository = Repository::factory()->create(); //id=2
-            $data = [
-                'url' => $this->faker->url,
-                'description' => $this->faker->text,
-            ];
-
-            
+        public function test_show(){
+            $user = User::factory()->create();
+            $repository = Repository::factory()->create(['user_id' => $user->id]);
 
             $this
                 ->actingAs($user)
-                ->put("repositories/$repository->id", $data)
+                ->get("repositories/$repository->id")
+                ->assertStatus(200);
+
+        }
+
+        public function test_show_policy(){
+            $user = User::factory()->create();
+            $repository = Repository::factory()->create();
+
+            $this
+                ->actingAs($user)
+                ->get("repositories/$repository->id")
                 ->assertStatus(403);
 
-                //$this->assertDatabaseHas('repositories', $data);
         }
+
+        public function test_index_empty(){
+            Repository::factory()->create(); // user_id = 1
+    
+            $user = User::factory()->create(); // id = 2
+    
+            $this
+                ->actingAs($user)
+                ->get('repositories')
+                ->assertStatus(200)
+                ->assertSee('No hay repositorios creados');
+        }
+    
+        public function test_index_with_data(){
+            $user = User::factory()->create(); // id = 1
+            $repository = Repository::factory()->create(['user_id' => $user->id]); // user_id = 1
+    
+            $this
+                ->actingAs($user)
+                ->get('repositories')
+                ->assertStatus(200)
+                ->assertSee($repository->id)
+                ->assertSee($repository->url);
+        }
+
+        public function test_edit(){
+            $user = User::factory()->create();
+            $repository = Repository::factory()->create(['user_id' => $user->id]);
+
+            $this
+                ->actingAs($user)
+                ->get("repositories/$repository->id")
+                ->assertStatus(200)
+                ->assertSee($repository->url)
+                ->assertSee($repository->description);
+
+        }
+
+        public function test_edit_policy(){
+            $user = User::factory()->create();
+            $repository = Repository::factory()->create();
+
+            $this
+                ->actingAs($user)
+                ->get("repositories/$repository->id/edit")
+                ->assertStatus(403);
+
+        }
+       
+
+        
+
 }
