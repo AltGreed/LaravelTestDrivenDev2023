@@ -7,6 +7,9 @@ use App\Models\Repository;
 
 class RepositoryController extends Controller
 {
+    public function create(){
+        return view('repositories.create');
+    }
     public function store(Request $request){
 
         $request->validate([
